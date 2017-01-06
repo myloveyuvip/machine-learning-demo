@@ -5,6 +5,7 @@ import com.yuly.utils.ArffUtil;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by yuliyao on 2016/12/18.
@@ -18,13 +19,22 @@ public class Id3 {
         //1.读取样本数据
         ArffEntity arffEntity = ArffUtil.readArff(filePath);
         //2.样本熵
-        System.out.println(calcEntropy(arffEntity.getColumnsGroup("play")));
-
+        double sampleEntropy = calcEntropy(arffEntity.getColumnsGroup("play"));
         //3.各属性的信息增益
 
         //4.生成根结点
 
         //5.递归生成结点
+    }
+
+    /**
+     * 获取信息增益最大的属性
+     * @param entity
+     * @return
+     */
+    public String getMaxGainAttr(ArffEntity entity) {
+        Map attrMap = entity.getAttributeMap();
+        return null;
     }
 
     public static double calcEntropy(Integer... attrAmounts) {
