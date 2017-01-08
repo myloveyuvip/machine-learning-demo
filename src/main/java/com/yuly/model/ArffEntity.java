@@ -11,7 +11,7 @@ public class ArffEntity {
 
     private String description;
 
-    private Map attributeMap;
+    private Map<String,Object> attributeMap;
 
     private List<String[]> samples;
 
@@ -61,23 +61,61 @@ public class ArffEntity {
     }
 
     /**
-     * 获取
+     * 得到结果的样本
+     * @return
+     */
+    public String[] getResultColumns() {
+        String resultKey = (String)this.attributeMap.keySet().toArray()[this.attributeMap.keySet().size() - 1];
+        return getColumns(resultKey);
+    }
+
+    /**
+     * 获取属性的值分组统计
      * @param attrName
      * @return
      */
-    public Integer[] getColumnsGroup(@NotNull String attrName) {
-        Map<String,Integer> countMap = new HashMap<>();
+    public List<Integer[]> getColumnsGroup(@NotNull String attrName) {
+        Map<String,Map> countMap = new HashMap<>();
         String[] columns = getColumns(attrName);
+        String[] resultColumns = getResultColumns();
         if (columns != null) {
-            for (String column : columns) {
-                if (!countMap.containsKey(column)) {
-                    countMap.put(column, 1);
+            for (int i = 0; i < columns.length; i++) {
+                if (!countMap.containsKey(columns[i])) {
+                    Map<String, Integer> resultMap = new HashMap<>();
+                    resultMap.put(resultColumns[i], 1);
+                    countMap.put(columns[i], resultMap);
                 } else {
-                    countMap.put(column, countMap.get(column) + 1);
+                    Map<String, Integer> resultMap = countMap.get(columns[i]);
+                    if (!resultMap.containsKey(resultColumns[i])) {
+                        resultMap.put(resultColumns[i], 1);
+                    } else {
+                        resultMap.put(resultColumns[i], resultMap.get(resultColumns[i] + 1));
+                    }
+                    countMap.put(columns[i], resultMap);
                 }
             }
         }
-        Integer[] groups = new Integer[countMap.values().size()];
-        return countMap.values().toArray(groups);
+        Map<String, Integer[]> countMap2 = new HashMap<>();
+        Iterator iterator = countMap.keySet().iterator();
+        while (iterator.hasNext()) {
+            String key = (String) iterator.next();
+            Map resultMap = countMap.get(key);
+            List valueList = new ArrayList();
+            valueList.addAll(resultMap.values());
+            countMap2.put(key, (Integer[]) valueList.toArray());
+        }
+        List<Integer[]> groupList = new ArrayList<>();
+        groupList.addAll(countMap2.values());
+        return groupList;
+    }
+
+    /**
+     * 获取结果集的分组统计
+     * @return
+     */
+    public Integer[] getResultColumnsGroup() {
+        getResultColumns()
+        String resultKey = (String)this.attributeMap.keySet().toArray()[this.attributeMap.keySet().size() - 1];
+        return getColumnsGroup(resultKey);
     }
 }

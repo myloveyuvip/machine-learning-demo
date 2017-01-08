@@ -3,6 +3,7 @@ package com.yuly;
 import com.yuly.model.ArffEntity;
 import com.yuly.utils.ArffUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,13 @@ public class Id3 {
      * @return
      */
     public String getMaxGainAttr(ArffEntity entity) {
-        Map attrMap = entity.getAttributeMap();
+        double maxGain = 0;
+        Map<String,Object> attrMap = entity.getAttributeMap();
+        for (String attr : attrMap.keySet()) {
+            Integer[] groups = entity.getColumnsGroup(attr);
+
+            calcGain(new ArrayList<Integer[]>().add(groups), calcEntropy(entity.getResultColumnsGroup()), entity.getSamples().size());
+        }
         return null;
     }
 
