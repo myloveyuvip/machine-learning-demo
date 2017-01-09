@@ -11,7 +11,7 @@ public class ArffEntity {
 
     private String description;
 
-    private Map<String,Object> attributeMap;
+    private Map<String,String[]> attributeMap;
 
     private List<String[]> samples;
 
@@ -23,11 +23,11 @@ public class ArffEntity {
         this.description = description;
     }
 
-    public Map getAttributeMap() {
+    public Map<String,String[]> getAttributeMap() {
         return attributeMap;
     }
 
-    public void setAttributeMap(Map attributeMap) {
+    public void setAttributeMap(Map<String,String[]> attributeMap) {
         this.attributeMap = attributeMap;
     }
 
@@ -89,7 +89,7 @@ public class ArffEntity {
                     if (!resultMap.containsKey(resultColumns[i])) {
                         resultMap.put(resultColumns[i], 1);
                     } else {
-                        resultMap.put(resultColumns[i], resultMap.get(resultColumns[i] + 1));
+                        resultMap.put(resultColumns[i], resultMap.get(resultColumns[i]) + 1);
                     }
                     countMap.put(columns[i], resultMap);
                 }
@@ -100,9 +100,9 @@ public class ArffEntity {
         while (iterator.hasNext()) {
             String key = (String) iterator.next();
             Map resultMap = countMap.get(key);
-            List valueList = new ArrayList();
+            List<Integer> valueList = new ArrayList();
             valueList.addAll(resultMap.values());
-            countMap2.put(key, (Integer[]) valueList.toArray());
+            countMap2.put(key, valueList.toArray(new Integer[]{}));
         }
         List<Integer[]> groupList = new ArrayList<>();
         groupList.addAll(countMap2.values());
@@ -114,8 +114,39 @@ public class ArffEntity {
      * @return
      */
     public Integer[] getResultColumnsGroup() {
-        getResultColumns()
-        String resultKey = (String)this.attributeMap.keySet().toArray()[this.attributeMap.keySet().size() - 1];
-        return getColumnsGroup(resultKey);
+        Map<String,Integer> resultColumnGroup = new HashMap();
+        String[] resultColumns = getResultColumns();
+        if (resultColumns != null) {
+            for (String resultColumn : resultColumns) {
+                if (!resultColumnGroup.containsKey(resultColumn)) {
+                    resultColumnGroup.put(resultColumn, 1);
+                } else {
+                    resultColumnGroup.put(resultColumn, resultColumnGroup.get(resultColumn) + 1);
+                }
+            }
+        }
+        return new ArrayList<>(resultColumnGroup.values()).toArray(new Integer[]{});
+    }
+
+    /**
+     * 返回属性的索引，即第几列
+     * @param attr
+     * @return
+     */
+    public int indexOfAttr(String attr) {
+        for(int i=0;i<this.attributeMap.keySet().toArray().length;i++) {
+            if (attr.equals(this.attributeMap.keySet().toArray()[i])) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * 获取结果的属性名
+     * @return
+     */
+    public String getResultAttr() {
+        return (String) this.attributeMap.keySet().toArray()[attributeMap.size() - 1];
     }
 }

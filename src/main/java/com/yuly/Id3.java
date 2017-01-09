@@ -1,7 +1,6 @@
 package com.yuly;
 
 import com.yuly.model.ArffEntity;
-import com.yuly.utils.ArffUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,16 +15,44 @@ public class Id3 {
     /**
      * 生成决策树
      */
-    public void genDecisionTree(String filePath) {
-        //1.读取样本数据
-        ArffEntity arffEntity = ArffUtil.readArff(filePath);
-        //2.样本熵
-        double sampleEntropy = calcEntropy(arffEntity.getColumnsGroup("play"));
-        //3.各属性的信息增益
+    public void genDecisionTree(ArffEntity arffEntity, List<String> notAtrrList) {
+        if (calcEntropy(arffEntity.getResultColumnsGroup()) == 0) {
+            String[] sample = arffEntity.getSamples().get(0);
+            StringBuffer sb = new StringBuffer();
+            for(int i=0;i<notAtrrList.size();i++) {
+                String node = notAtrrList.get(i);
+                if (i > 0) {
+                    sb.append("∧");
+                }
+                sb.append(node + "=" + sample[arffEntity.indexOfAttr(node)]);
+            }
+            sb.append(":" + arffEntity.getResultAttr() + "=" + sample[arffEntity.indexOfAttr(arffEntity.getResultAttr())]);
+            System.out.println(sb.toString());
+            return;
+        }
 
-        //4.生成根结点
-
-        //5.递归生成结点
+        //1.获取信息增益最大的属性:结点
+        String maxGainAttr = getMaxGainAttr(arffEntity, notAtrrList);
+        int attrIndex = arffEntity.indexOfAttr(maxGainAttr);
+        //2.获取属性拥有的值：分支
+        String[] attrValues = arffEntity.getAttributeMap().get(maxGainAttr);
+        //分支下，重新生成实体进行递归
+        List<String[]> samples = arffEntity.getSamples();
+        for (String attrValue : attrValues) {
+            List<String[]> branchSamples = new ArrayList<>();
+            for (String[] sample : samples) {
+                if (attrValue.equals(sample[attrIndex])) {
+                    branchSamples.add(sample);
+                }
+            }
+            ArffEntity branchEntity = new ArffEntity();
+            branchEntity.setAttributeMap(arffEntity.getAttributeMap());
+            branchEntity.setSamples(branchSamples);
+            List<String> branchNotAttrList = new ArrayList<>();
+            branchNotAttrList.addAll(notAtrrList);
+            branchNotAttrList.add(maxGainAttr);
+            genDecisionTree(branchEntity, branchNotAttrList);
+        }
     }
 
     /**
@@ -33,15 +60,22 @@ public class Id3 {
      * @param entity
      * @return
      */
-    public String getMaxGainAttr(ArffEntity entity) {
+    public String getMaxGainAttr(ArffEntity entity,List<String> notAttrList) {
         double maxGain = 0;
-        Map<String,Object> attrMap = entity.getAttributeMap();
+        String maxGainAttr = null;
+        Map<String,String[]> attrMap = entity.getAttributeMap();
+        String resultAttr = entity.getResultAttr();
         for (String attr : attrMap.keySet()) {
-            Integer[] groups = entity.getColumnsGroup(attr);
-
-            calcGain(new ArrayList<Integer[]>().add(groups), calcEntropy(entity.getResultColumnsGroup()), entity.getSamples().size());
+            if (notAttrList.contains(attr) || resultAttr.equals(attr)) {
+                continue;
+            }
+            double infoGain = calcGain(entity.getColumnsGroup(attr), calcEntropy(entity.getResultColumnsGroup()), entity.getSamples().size());
+            if (infoGain > maxGain) {
+                maxGain = infoGain;
+                maxGainAttr = attr;
+            }
         }
-        return null;
+        return maxGainAttr;
     }
 
     public static double calcEntropy(Integer... attrAmounts) {
@@ -121,7 +155,11 @@ public class Id3 {
     public static double calcGain(List<Integer[]> list,double entropyS,double sampleCount) {
         double sumExpect = 0;
         for (Integer[] attrInfo : list) {
-            sumExpect += ((attrInfo[0] + attrInfo[1]) / sampleCount) * calcEntropy(attrInfo);
+            int attrCount=0;
+            for (int attr : attrInfo) {
+                attrCount += attr;
+            }
+            sumExpect += (attrCount / sampleCount) * calcEntropy(attrInfo);
         }
         return entropyS - sumExpect;
     }
